@@ -1,0 +1,173 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Search, Command } from "lucide-react"
+import Image from "next/image"
+import Link from "next/link"
+import { CommandDialog } from "@/components/command-dialog"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { Pagination } from "@/components/pagination"
+
+import { Badge } from "@/components/ui/badge"
+
+import { uiLibraries } from "@/lib/mockData"
+
+const ITEMS_PER_PAGE = 6
+
+export default function HomePage() {
+  const [searchQuery, setSearchQuery] = useState("")
+  const [commandOpen, setCommandOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const filteredLibraries = uiLibraries.filter(
+    (library) =>
+      library.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      library.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      library.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      library.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())),
+  )
+
+  const totalPages = Math.ceil(filteredLibraries.length / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const paginatedLibraries = filteredLibraries.slice(startIndex, startIndex + ITEMS_PER_PAGE)
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery])
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        setCommandOpen(true)
+      }
+    }
+    document.addEventListener("keydown", down)
+    return () => document.removeEventListener("keydown", down)
+  }, [])
+
+  return (
+    <div className="min-h-screen">
+      {/* Header */}
+      <header className="border-b">
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              
+              <div className="w-10 h-10">
+                <svg width="40" height="40" viewBox="0 0 108 109" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 10H42V99H10V10Z" fill="currentColor" fillOpacity="0.4"/>
+                  <path d="M42 10H99V42H42V10Z" fill="currentColor" fillOpacity="0.4"/>
+                  <path d="M12 87V107M97 2V107M2 97H22M40 87V107M30 97H40M49 97H106M12 73V78M12 59V64M40 73V78M40 59V64M12 30V50M40 50V40H30M2 40H22M12 2V22M2 12H22M30 12H40M49 12H106M49 40H106" stroke="url(#paint0_linear_16_50)" strokeWidth="4" strokeLinecap="round"/>
+                  <defs>
+                    <linearGradient id="paint0_linear_16_50" x1="102" y1="14" x2="2" y2="82" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="currentColor"/>
+                      <stop offset="1" stopColor="currentColor" stopOpacity="0.7"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+
+              <div>
+                <h1 className="text-3xl font-semibold">UI Libraries Explorer <Badge className="rounded-sm">Beta</Badge></h1>
+                <p className="text-muted-foreground mt-2">Discover component libraries for your scripts</p>
+              </div>
+            </div>
+            <ThemeToggle />
+          </div>
+        </div>
+      </header>
+
+      {/* Search */}
+      <section className="max-w-6xl mx-auto px-6 py-8">
+        <div className="flex gap-3 max-w-2xl">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Search libraries..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Button variant="outline" onClick={() => setCommandOpen(true)} className="flex items-center gap-2">
+            <Command className="w-4 h-4" />
+            <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              ⌘K
+            </kbd>
+          </Button>
+        </div>
+      </section>
+
+      {/* Libraries */}
+      <main className="max-w-6xl mx-auto px-6 pb-16">
+        {filteredLibraries.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-muted-foreground text-lg">No libraries found</p>
+            <Button variant="outline" onClick={() => setSearchQuery("")} className="mt-4">
+              Clear search
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {paginatedLibraries.map((library) => (
+                <Card key={library.id} className="group hover:shadow-md transition-all duration-200 overflow-hidden">
+                  <div className="relative h-40 bg-muted overflow-hidden">
+                    <Image
+                      src={library.image || "/placeholder.svg"}
+                      alt={`${library.name} preview`}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  <CardHeader className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-lg font-medium truncate">{library.name}</CardTitle>
+                        <CardDescription className="mt-1 text-sm line-clamp-2">{library.description}</CardDescription>
+                        <p className="text-xs text-muted-foreground mt-2">by {library.author}</p>
+                      </div>
+                      <Link href={`/library/${library.id}`}>
+                        <Button size="sm" className="flex-shrink-0">
+                          View
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-12 flex justify-center">
+                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+              </div>
+            )}
+
+            {/* Results info */}
+            <div className="mt-8 text-center text-sm text-muted-foreground">
+              Showing {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, filteredLibraries.length)} of{" "}
+              {filteredLibraries.length} libraries
+            </div>
+          </>
+        )}
+      </main>
+
+      <CommandDialog
+        open={commandOpen}
+        onOpenChange={setCommandOpen}
+        libraries={uiLibraries}
+        onSelect={(library) => {
+          setCommandOpen(false)
+          window.location.href = `/library/${library.id}`
+        }}
+      />
+    </div>
+  )
+}
