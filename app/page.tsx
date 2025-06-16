@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Search, Command } from "lucide-react"
+import { Search, Command, MessageSquare } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { CommandDialog } from "@/components/command-dialog"
@@ -18,8 +18,14 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
-
 import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 import { uiLibraries } from "@/lib/mockData"
 
@@ -29,6 +35,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [commandOpen, setCommandOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
+  const [discordDialogOpen, setDiscordDialogOpen] = useState(true)
 
   const filteredLibraries = uiLibraries.filter(
     (library) =>
@@ -85,7 +92,48 @@ export default function HomePage() {
                 <p className="text-muted-foreground mt-2">Discover component libraries for your scripts</p>
               </div>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-4">
+              <Dialog open={discordDialogOpen} onOpenChange={setDiscordDialogOpen}>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Join Our Discord Community</DialogTitle>
+                    <DialogDescription>
+                      Join our Discord server to share your UI libraries and connect with other developers!
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-6 py-4">
+                    <div>
+                      <h3 className="font-semibold mb-2">Forum Name: uilibs</h3>
+                      <p className="text-sm text-muted-foreground">Share your UI libraries and get them featured on our platform!</p>
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-semibold mb-2">Publishing Rules:</h3>
+                      <ul className="list-disc pl-6 space-y-2 text-sm">
+                        <li>Only UI-libraries for Roblox are allowed. Off-topic posts are not permitted.</li>
+                        <li>When posting a UI-library, please include:</li>
+                        <ul className="list-disc pl-6 space-y-1 mt-1">
+                          <li>Library name</li>
+                          <li>Author's name (if known)</li>
+                          <li>1 main preview image</li>
+                          <li>Additional screenshots (preview)</li>
+                          <li>Brief description (info)</li>
+                          <li>Link to GitHub (if available)</li>
+                          <li>Link to official website (if available)</li>
+                        </ul>
+                      </ul>
+                    </div>
+
+                    <div className="pt-4">
+                      <Button className="w-full" onClick={() => window.open('https://discord.gg/fHP8T9jNJWk', '_blank')}>
+                        Join Discord Server
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </header>
