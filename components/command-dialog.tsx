@@ -37,7 +37,7 @@ export function CommandDialog({ open, onOpenChange, libraries, onSelect }: Comma
   return (
     <CommandDialogPrimitive open={open} onOpenChange={onOpenChange}>
       <DialogHeader>
-        <DialogTitle>Search Libraries</DialogTitle>
+        <DialogTitle></DialogTitle>
       </DialogHeader>
       <CommandInput placeholder="Search by name, description, or author..." />
       <CommandList>
