@@ -55,7 +55,7 @@ export default function RootLayout({
                   Made with ❤️ for developers
                 </p>
                 <Link 
-                  href="https://discord.gg/your-server" 
+                  href="https://discord.gg/GGXYytMhtJ" 
                   target="_blank" 
                   rel="noopener noreferrer"
                 >
