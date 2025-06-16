@@ -27,7 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-import { uiLibraries } from "@/lib/mockData"
+import { uiLibraries } from "@/lib/test/mockData"
 
 const ITEMS_PER_PAGE = 6
 

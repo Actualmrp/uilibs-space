@@ -12,7 +12,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { ImageViewer } from "@/components/image-viewer";
 import { MarkdownExample } from "@/components/markdown-example";
 
-import { libraryData } from "@/lib/libraryData";
+import { libraryData } from "@/lib/test/libraryData";
 
 interface PageProps {
   params: Promise<{
