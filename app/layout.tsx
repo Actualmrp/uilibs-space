@@ -4,6 +4,8 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 
+import { Analytics } from "@vercel/analytics/next"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
@@ -46,7 +48,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}
-
+          <Analytics/>
           {/* Footer */}
           <footer className="border-t mt-16">
             <div className="max-w-6xl mx-auto px-6 py-8">
