@@ -125,7 +125,7 @@ export default function HomePage() {
                     </div>
 
                     <div className="pt-4">
-                      <Button className="w-full" onClick={() => window.open('https://discord.gg/fHP8T9jNJWk', '_blank')}>
+                      <Button className="w-full" onClick={() => window.open('https://discord.gg/fHP8T9jNJW', '_blank')}>
                         Join Discord Server
                       </Button>
                     </div>
