@@ -2,17 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Search, Command, MessageSquare } from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
 import { CommandDialog } from "@/components/command-dialog"
 import { ThemeToggle } from "@/components/theme-toggle"
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -26,6 +22,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+
+import { LibraryCard } from "@/components/app/libraryCard"
 
 import { uiLibraries } from "@/lib/test/mockData"
 
@@ -172,30 +170,7 @@ export default function HomePage() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {paginatedLibraries.map((library) => (
-                <Card key={library.id} className="group hover:shadow-md transition-all duration-200 overflow-hidden">
-                  <div className="relative h-40 bg-muted overflow-hidden">
-                    <Image
-                      src={library.image || "/placeholder.svg"}
-                      alt={`${library.name} preview`}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  <CardHeader className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-lg font-medium truncate">{library.name}</CardTitle>
-                        <CardDescription className="mt-1 text-sm line-clamp-2">{library.description}</CardDescription>
-                        <p className="text-xs text-muted-foreground mt-2">by {library.author}</p>
-                      </div>
-                      <Link href={`/library/${library.id}`}>
-                        <Button size="sm" className="flex-shrink-0">
-                          View
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardHeader>
-                </Card>
+                <LibraryCard key={library.id} library={library} />
               ))}
             </div>
 

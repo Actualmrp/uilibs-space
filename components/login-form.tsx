@@ -47,13 +47,6 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
           <div className="flex flex-col gap-4">
             {error && <p className="text-sm text-destructive-500">{error}</p>}
             <Button 
-              onClick={() => handleSocialLogin('github')} 
-              className="w-full" 
-              disabled={isLoading}
-            >
-              {isLoading ? 'Logging in...' : 'Continue with Github'}
-            </Button>
-            <Button 
               onClick={() => handleSocialLogin('discord')} 
               className="w-full" 
               disabled={isLoading}

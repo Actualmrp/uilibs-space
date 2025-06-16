@@ -3,32 +3,36 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/server'
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get('code')
-  // if "next" is in param, use it as the redirect URL
-  let next = searchParams.get('next') ?? '/'
-  if (!next.startsWith('/')) {
-    // if "next" is not a relative URL, use the default
-    next = '/'
-  }
+  try {
+    const { searchParams, origin } = new URL(request.url)
+    const code = searchParams.get('code')
+    const next = searchParams.get('next') ?? '/'
 
-  if (code) {
+    if (!code) {
+      return NextResponse.redirect(`${origin}/auth/error?error=No code provided`)
+    }
+
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
-      const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
-      const isLocalEnv = process.env.NODE_ENV === 'development'
-      if (isLocalEnv) {
-        // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
-        return NextResponse.redirect(`${origin}${next}`)
-      } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`)
-      } else {
-        return NextResponse.redirect(`${origin}${next}`)
-      }
-    }
-  }
 
-  // return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/auth/error`)
+    if (error) {
+      console.error('Auth error:', error.message)
+      return NextResponse.redirect(`${origin}/auth/error?error=${error.message}`)
+    }
+
+    // Handle redirect with proper origin
+    const forwardedHost = request.headers.get('x-forwarded-host')
+    const isLocalEnv = process.env.NODE_ENV === 'development'
+    
+    if (isLocalEnv) {
+      return NextResponse.redirect(`${origin}${next}`)
+    } else if (forwardedHost) {
+      return NextResponse.redirect(`https://${forwardedHost}${next}`)
+    }
+    
+    return NextResponse.redirect(`${origin}${next}`)
+  } catch (error) {
+    console.error('Unexpected error:', error)
+    return NextResponse.redirect(`${origin}/auth/error?error=An unexpected error occurred`)
+  }
 }
