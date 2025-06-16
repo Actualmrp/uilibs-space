@@ -1,122 +1,115 @@
 import ReactMarkdown from "react-markdown";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Copy, Check } from "lucide-react";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useState } from "react";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface MarkdownExampleProps {
-  title: string;
   content: string;
 }
 
-export function MarkdownExample({ title, content }: MarkdownExampleProps) {
+function CopyButton({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <Button
+      className="absolute top-2 right-2 z-10 pointer-events-auto w-auto h-auto p-1.5"
+      size="icon"
+      variant="secondary"
+      onClick={handleCopy}
+    >
+      {copied ? <Check size={8} /> : <Copy size={8} />}
+    </Button>
+  );
+}
+
+export function MarkdownExample({ content }: MarkdownExampleProps) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       rehypePlugins={[rehypeRaw, rehypeSanitize]}
       components={{
-        h1({ children }) {
+        h1: ({ children }) => (
+          <h1 className="text-4xl font-bold mb-4">{children}</h1>
+        ),
+        h2: ({ children }) => (
+          <h2 className="text-3xl font-semibold mb-3 mt-6">{children}</h2>
+        ),
+        h3: ({ children }) => (
+          <h3 className="text-2xl font-semibold mb-2 mt-5">{children}</h3>
+        ),
+        h4: ({ children }) => (
+          <h4 className="text-xl font-semibold mb-2 mt-4">{children}</h4>
+        ),
+        h5: ({ children }) => (
+          <h5 className="text-lg font-semibold mb-2 mt-3">{children}</h5>
+        ),
+        h6: ({ children }) => (
+          <h6 className="text-base font-semibold mb-2 mt-3">{children}</h6>
+        ),
+        a: ({ href, children }) => (
+          <a
+            href={href}
+            className="text-primary hover:underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {children}
+          </a>
+        ),
+        code({ node, inline, className, children, ...props }) {
+          const match = /language-(\w+)/.exec(className || "");
+          const code = String(children).trim();
+
+          if (inline) {
+            return (
+              <code className="bg-muted/50 px-1.5 py-0.5 rounded text-xs font-mono">
+                {children}
+              </code>
+            );
+          }
+
           return (
-            <h1 className="scroll-m-20 text-4xl font-bold tracking-tight mb-4">
-              {children}
-            </h1>
-          );
-        },
-        h2({ children }) {
-          return (
-            <h2 className="scroll-m-20 text-3xl font-semibold tracking-tight mb-3 mt-6">
-              {children}
-            </h2>
-          );
-        },
-        h3({ children }) {
-          return (
-            <h3 className="scroll-m-20 text-2xl font-semibold tracking-tight mb-2 mt-5">
-              {children}
-            </h3>
-          );
-        },
-        h4({ children }) {
-          return (
-            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight mb-2 mt-4">
-              {children}
-            </h4>
-          );
-        },
-        h5({ children }) {
-          return (
-            <h5 className="scroll-m-20 text-lg font-semibold tracking-tight mb-2 mt-3">
-              {children}
-            </h5>
-          );
-        },
-        h6({ children }) {
-          return (
-            <h6 className="scroll-m-20 text-base font-semibold tracking-tight mb-2 mt-3">
-              {children}
-            </h6>
-          );
-        },
-        a({ href, children }) {
-          return (
-            <a
-              href={href}
-              className="text-primary hover:underline transition-colors"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {children}
-            </a>
-          );
-        },
-        code({ className, children, ...props }) {
-          return (
-            <code
-              className={`${className} bg-muted px-1.5 py-0.5 rounded text-xs font-mono`}
-              {...props}
-            >
-              {children}
-            </code>
-          );
-        },
-        pre({ children, ...props }) {
-          return (
-            <pre
-              className="bg-muted p-3 rounded text-xs font-mono whitespace-pre-wrap overflow-x-auto"
-              {...props}
-            >
-              {children}
-            </pre>
+            <div className="relative rounded-md border border-border bg-transparent">
+              <CopyButton code={code} />
+              <ScrollArea className="h-auto max-w-full overflow-auto">
+                <SyntaxHighlighter
+                  style={oneDark}
+                  language={match?.[1] || "text"}
+                  PreTag="div"
+                  className="!bg-transparent !m-0 !p-4 text-sm text-foreground [&>code]:!bg-transparent"
+                  customStyle={{
+                    background: "#fff",
+                    margin: 0,
+                    padding: "1rem",
+                    boxShadow: "none",
+                  }}
+                >
+                  {code}
+                </SyntaxHighlighter>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+            </div>
           );
         },
         p({ children }) {
-          const content = children?.toString() || "";
-          if (content.startsWith("<") && content.endsWith(">")) {
-            const componentName = content.match(/<(\w+)/)?.[1];
-            const props = content
-              .match(/(\w+)="([^"]+)"/g)
-              ?.reduce((acc, prop) => {
-                const [key, value] = prop.split("=");
-                acc[key] = value.replace(/"/g, "");
-                return acc;
-              }, {} as Record<string, string>);
-
-            switch (componentName) {
-              case "Button":
-                return (
-                  <Button {...props}>{content.match(/>([^<]+)</)?.[1]}</Button>
-                );
-              default:
-                return <p>{children}</p>;
-            }
-          }
-          return <p>{children}</p>;
+          return <p className="my-2">{children}</p>;
         },
         table({ children }) {
           return (
-            <div className="overflow-x-auto">
-              <table className="border-collapse border border-border">
+            <div className="overflow-x-auto my-4">
+              <table className="border-collapse border border-border w-full">
                 {children}
               </table>
             </div>
@@ -134,19 +127,19 @@ export function MarkdownExample({ title, content }: MarkdownExampleProps) {
         },
         blockquote({ children }) {
           return (
-            <blockquote className="border-l-4 border-border pl-4 italic">
+            <blockquote className="border-l-4 border-border pl-4 italic text-muted-foreground my-4">
               {children}
             </blockquote>
           );
         },
-        hr() {
-          return <hr className="border-border my-4" />;
-        },
-        img({ src, alt }) {
-          return (
-            <img src={src} alt={alt} className="rounded-lg max-w-full h-auto" />
-          );
-        },
+        hr: () => <hr className="border-border my-4" />,
+        img: ({ src, alt }) => (
+          <img
+            src={src}
+            alt={alt}
+            className="rounded-lg max-w-full h-auto my-4"
+          />
+        ),
       }}
     >
       {content}

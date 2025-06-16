@@ -120,7 +120,7 @@ export default function LibraryPage({ params }: PageProps) {
           <div>
             <h2 className="text-xl font-semibold mb-3">About</h2>
             <div className="text-muted-foreground leading-relaxed">
-              <MarkdownExample title="Example" content={library.about} />
+              <MarkdownExample content={library.about} />
             </div>
           </div>
 
