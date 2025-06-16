@@ -10,16 +10,30 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 
-type YourLibraryType = {
+interface Library {
   id: string;
   name: string;
   description: string;
+  about: string;
   author: string;
-  image?: string;
-};
+  author_bio: string;
+  website: string | null;
+  github: string | null;
+  preview: string | null;
+  gallery: string[];
+  created_at: string;
+  updated_at: string;
+}
 
-export function LibraryCard({ library }: { library: YourLibraryType }) {
+export function LibraryCard({ library }: { library: Library }) {
   const router = useRouter();
+
+  // Function to get the full URL for Supabase storage images
+  const getImageUrl = (path: string | null) => {
+    if (!path) return "/placeholder.svg";
+    if (path.startsWith("http")) return path;
+    return `https://pamgxjfckwyvefsnbtfp.supabase.co/storage/v1/object/public/libraries/${path}`;
+  };
 
   return (
     <Card
@@ -28,7 +42,7 @@ export function LibraryCard({ library }: { library: YourLibraryType }) {
     >
       <div className="relative h-40 bg-muted overflow-hidden">
         <Image
-          src={library.image || "/placeholder.svg"}
+          src={getImageUrl(library.preview)}
           alt={`${library.name} preview`}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"

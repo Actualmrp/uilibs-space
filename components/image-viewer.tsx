@@ -6,7 +6,7 @@ import { X, ChevronLeft, ChevronRight } from "lucide-react"
 import Image from "next/image"
 
 interface ImageViewerProps {
-  images: string[]
+  images: (string | null)[]
   initialIndex: number
   isOpen: boolean
   onClose: () => void
@@ -14,6 +14,13 @@ interface ImageViewerProps {
 
 export function ImageViewer({ images, initialIndex, isOpen, onClose }: ImageViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
+
+  // Function to get the full URL for Supabase storage images
+  const getImageUrl = (path: string | null) => {
+    if (!path) return "/placeholder.svg";
+    if (path.startsWith("http")) return path;
+    return `https://pamgxjfckwyvefsnbtfp.supabase.co/storage/v1/object/public/libraries/${path}`;
+  };
 
   useEffect(() => {
     setCurrentIndex(initialIndex)
@@ -100,7 +107,7 @@ export function ImageViewer({ images, initialIndex, isOpen, onClose }: ImageView
         {/* Main image */}
         <div className="relative w-full h-full max-w-5xl max-h-[90vh]">
           <Image
-            src={images[currentIndex] || "/placeholder.svg"}
+            src={getImageUrl(images[currentIndex])}
             alt={`Image ${currentIndex + 1}`}
             fill
             className="object-contain"
@@ -126,7 +133,7 @@ export function ImageViewer({ images, initialIndex, isOpen, onClose }: ImageView
                   index === currentIndex ? "border-foreground" : "border-transparent"
                 }`}
               >
-                <Image src={image || "/placeholder.svg"} alt={`Thumbnail ${index + 1}`} fill className="object-cover" />
+                <Image src={getImageUrl(image)} alt={`Thumbnail ${index + 1}`} fill className="object-cover" />
               </button>
             ))}
           </div>

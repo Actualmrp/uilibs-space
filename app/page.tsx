@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search, Command, MessageSquare } from "lucide-react"
@@ -22,35 +23,111 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-
+import { createClient } from "@/lib/client"
 import { LibraryCard } from "@/components/app/libraryCard"
-
-import { uiLibraries } from "@/lib/test/mockData"
 
 const ITEMS_PER_PAGE = 6
 
-export default function HomePage() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [commandOpen, setCommandOpen] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [discordDialogOpen, setDiscordDialogOpen] = useState(true)
+interface Library {
+  id: string
+  name: string
+  description: string
+  about: string
+  author: string
+  author_bio: string
+  website: string | null
+  github: string | null
+  preview: string | null
+  gallery: string[]
+  created_at: string
+  updated_at: string
+}
 
-  const filteredLibraries = uiLibraries.filter(
+export default function HomePage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [commandOpen, setCommandOpen] = useState(false)
+  const [discordDialogOpen, setDiscordDialogOpen] = useState(false)
+  const [libraries, setLibraries] = useState<Library[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Get current search and page from URL
+  const currentSearch = searchParams.get('search') || ''
+  const currentPage = Number(searchParams.get('page')) || 1
+
+  useEffect(() => {
+    const fetchLibraries = async () => {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('libraries')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (error) throw error
+        setLibraries(data || [])
+      } catch (error) {
+        console.error('Error fetching libraries:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchLibraries()
+  }, [])
+
+  useEffect(() => {
+    // Check if we should show the Discord modal
+    const checkDiscordModal = () => {
+      const lastShown = localStorage.getItem('discordModalLastShown')
+      const now = new Date().getTime()
+      
+      if (!lastShown) {
+        // First time visitor
+        setDiscordDialogOpen(true)
+        localStorage.setItem('discordModalLastShown', now.toString())
+        return
+      }
+
+      const oneDay = 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+      const timeSinceLastShown = now - parseInt(lastShown)
+
+      if (timeSinceLastShown >= oneDay) {
+        setDiscordDialogOpen(true)
+        localStorage.setItem('discordModalLastShown', now.toString())
+      }
+    }
+
+    checkDiscordModal()
+  }, [])
+
+  const filteredLibraries = libraries.filter(
     (library) =>
-      library.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      library.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      library.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      library.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())),
+      library.name.toLowerCase().includes(currentSearch.toLowerCase()) ||
+      library.description.toLowerCase().includes(currentSearch.toLowerCase()) ||
+      library.author.toLowerCase().includes(currentSearch.toLowerCase())
   )
 
   const totalPages = Math.ceil(filteredLibraries.length / ITEMS_PER_PAGE)
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
   const paginatedLibraries = filteredLibraries.slice(startIndex, startIndex + ITEMS_PER_PAGE)
 
-  // Reset to first page when search changes
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [searchQuery])
+  const handleSearch = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (value) {
+      params.set('search', value)
+    } else {
+      params.delete('search')
+    }
+    params.set('page', '1')
+    router.push(`/?${params.toString()}`)
+  }
+
+  const handlePageChange = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('page', page.toString())
+    router.push(`/?${params.toString()}`)
+  }
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -62,6 +139,17 @@ export default function HomePage() {
     document.addEventListener("keydown", down)
     return () => document.removeEventListener("keydown", down)
   }, [])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading libraries...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen">
@@ -123,7 +211,13 @@ export default function HomePage() {
                     </div>
 
                     <div className="pt-4">
-                      <Button className="w-full" onClick={() => window.open('https://discord.gg/fHP8T9jNJW', '_blank')}>
+                      <Button 
+                        className="w-full" 
+                        onClick={() => {
+                          window.open('https://discord.gg/fHP8T9jNJW', '_blank')
+                          setDiscordDialogOpen(false)
+                        }}
+                      >
                         Join Discord Server
                       </Button>
                     </div>
@@ -143,8 +237,8 @@ export default function HomePage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder="Search libraries..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={currentSearch}
+              onChange={(e) => handleSearch(e.target.value)}
               className="pl-10"
             />
           </div>
@@ -162,7 +256,7 @@ export default function HomePage() {
         {filteredLibraries.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-muted-foreground text-lg">No libraries found</p>
-            <Button variant="outline" onClick={() => setSearchQuery("")} className="mt-4">
+            <Button variant="outline" onClick={() => handleSearch('')} className="mt-4">
               Clear search
             </Button>
           </div>
@@ -184,7 +278,7 @@ export default function HomePage() {
                         href="#" 
                         onClick={(e) => {
                           e.preventDefault()
-                          if (currentPage > 1) setCurrentPage(currentPage - 1)
+                          if (currentPage > 1) handlePageChange(currentPage - 1)
                         }}
                         className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
                       />
@@ -196,7 +290,7 @@ export default function HomePage() {
                           href="#"
                           onClick={(e) => {
                             e.preventDefault()
-                            setCurrentPage(page)
+                            handlePageChange(page)
                           }}
                           isActive={currentPage === page}
                         >
@@ -210,7 +304,7 @@ export default function HomePage() {
                         href="#" 
                         onClick={(e) => {
                           e.preventDefault()
-                          if (currentPage < totalPages) setCurrentPage(currentPage + 1)
+                          if (currentPage < totalPages) handlePageChange(currentPage + 1)
                         }}
                         className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
                       />
@@ -232,10 +326,10 @@ export default function HomePage() {
       <CommandDialog
         open={commandOpen}
         onOpenChange={setCommandOpen}
-        libraries={uiLibraries}
+        libraries={libraries}
         onSelect={(library) => {
           setCommandOpen(false)
-          window.location.href = `/library/${library.id}`
+          router.push(`/library/${library.id}`)
         }}
       />
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { use } from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, ExternalLink, Github } from "lucide-react";
@@ -11,8 +11,23 @@ import { notFound } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ImageViewer } from "@/components/image-viewer";
 import { MarkdownExample } from "@/components/markdown-example";
+import { createClient } from "@/lib/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
-import { libraryData } from "@/lib/test/libraryData";
+interface Library {
+  id: string;
+  name: string;
+  description: string;
+  about: string;
+  author: string;
+  author_bio: string;
+  website: string | null;
+  github: string | null;
+  preview: string | null;
+  gallery: string[];
+  created_at: string;
+  updated_at: string;
+}
 
 interface PageProps {
   params: Promise<{
@@ -24,13 +39,96 @@ export default function LibraryPage({ params }: PageProps) {
   const { id } = use(params);
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const library = libraryData[id as keyof typeof libraryData];
+  const [library, setLibrary] = useState<Library | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const getImageUrl = (path: string | null) => {
+    if (!path) return "/placeholder.svg";
+    if (path.startsWith("http")) return path;
+    return `https://pamgxjfckwyvefsnbtfp.supabase.co/storage/v1/object/public/libraries/${path}`;
+  };
+
+  useEffect(() => {
+    const fetchLibrary = async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('libraries')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (error) throw error;
+        setLibrary(data);
+      } catch (error) {
+        console.error('Error fetching library:', error);
+        notFound();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLibrary();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        {/* Header Skeleton */}
+        <header className="border-b sticky top-0 bg-background/80 backdrop-blur-sm z-40">
+          <div className="max-w-5xl mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-9 w-20" /> {/* Back button */}
+                <div>
+                  <Skeleton className="h-6 w-48 mb-2" /> {/* Title */}
+                  <Skeleton className="h-4 w-32" /> {/* Author */}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-9 w-24" /> {/* Website button */}
+                <Skeleton className="h-9 w-24" /> {/* GitHub button */}
+                <ThemeToggle />
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-3xl mx-auto px-6 py-8">
+          {/* Hero Image Skeleton */}
+          <div className="space-y-8">
+            <Skeleton className="h-64 w-full rounded-lg" />
+
+            {/* Description Skeleton */}
+            <div>
+              <Skeleton className="h-7 w-20 mb-3" /> {/* About heading */}
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+            </div>
+
+            {/* Gallery Skeleton */}
+            <div>
+              <Skeleton className="h-7 w-20 mb-4" /> {/* Gallery heading */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {[...Array(6)].map((_, i) => (
+                  <Skeleton key={i} className="h-32 w-full rounded" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (!library) {
     notFound();
   }
 
-  const allImages = [library.preview, ...library.gallery];
+  const allImages = [library.preview, ...library.gallery].filter(Boolean);
 
   const openImageViewer = (index: number) => {
     setSelectedImageIndex(index);
@@ -99,22 +197,24 @@ export default function LibraryPage({ params }: PageProps) {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-8">
           {/* Hero Image */}
-          <div
-            className="relative h-64 bg-muted rounded-lg overflow-hidden cursor-pointer group"
-            onClick={() => openImageViewer(0)}
-          >
-            <Image
-              src={library.preview || "/placeholder.svg"}
-              alt={`${library.name} preview`}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200 flex items-center justify-center">
-              <div className="bg-background/80 backdrop-blur-sm px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                Click to view
+          {library.preview && (
+            <div
+              className="relative h-64 bg-muted rounded-lg overflow-hidden cursor-pointer group"
+              onClick={() => openImageViewer(0)}
+            >
+              <Image
+                src={getImageUrl(library.preview)}
+                alt={`${library.name} preview`}
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200 flex items-center justify-center">
+                <div className="bg-background/80 backdrop-blur-sm px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  Click to view
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Description */}
           <div>
@@ -125,36 +225,40 @@ export default function LibraryPage({ params }: PageProps) {
           </div>
 
           {/* Gallery */}
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Gallery</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {library.gallery.map((image, index) => (
-                <div
-                  key={index}
-                  className="relative h-32 bg-muted rounded overflow-hidden cursor-pointer group"
-                  onClick={() => openImageViewer(index + 1)}
-                >
-                  <Image
-                    src={image || "/placeholder.svg"}
-                    alt={`${library.name} example ${index + 1}`}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200" />
-                </div>
-              ))}
+          {library.gallery.length > 0 && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Gallery</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {library.gallery.map((image, index) => (
+                  <div
+                    key={index}
+                    className="relative h-32 bg-muted rounded overflow-hidden cursor-pointer group"
+                    onClick={() => openImageViewer(index + 1)}
+                  >
+                    <Image
+                      src={getImageUrl(image)}
+                      alt={`${library.name} example ${index + 1}`}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200" />
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </main>
 
       {/* Image Viewer */}
-      <ImageViewer
-        images={allImages}
-        initialIndex={selectedImageIndex}
-        isOpen={imageViewerOpen}
-        onClose={() => setImageViewerOpen(false)}
-      />
+      {allImages.length > 0 && (
+        <ImageViewer
+          images={allImages}
+          initialIndex={selectedImageIndex}
+          isOpen={imageViewerOpen}
+          onClose={() => setImageViewerOpen(false)}
+        />
+      )}
     </div>
   );
 }

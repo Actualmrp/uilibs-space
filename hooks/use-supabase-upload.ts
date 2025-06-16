@@ -48,6 +48,10 @@ type UseSupabaseUploadOptions = {
    * When set to false, an error is thrown if the object already exists. Defaults to `false`
    */
   upsert?: boolean
+  /**
+   * Callback function that is called when an error occurs during upload
+   */
+  onError?: (error: { name: string; message: string }) => void
 }
 
 type UseSupabaseUploadReturn = ReturnType<typeof useSupabaseUpload>
@@ -61,6 +65,7 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
     maxFiles = 1,
     cacheControl = 3600,
     upsert = false,
+    onError,
   } = options
 
   const [files, setFiles] = useState<FileWithPreview[]>([])
@@ -133,7 +138,9 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
             upsert,
           })
         if (error) {
-          return { name: file.name, message: error.message }
+          const errorObj = { name: file.name, message: error.message }
+          onError?.(errorObj)
+          return errorObj
         } else {
           return { name: file.name, message: undefined }
         }
@@ -151,7 +158,7 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
     setSuccesses(newSuccesses)
 
     setLoading(false)
-  }, [files, path, bucketName, errors, successes])
+  }, [files, path, bucketName, errors, successes, onError])
 
   useEffect(() => {
     if (files.length === 0) {

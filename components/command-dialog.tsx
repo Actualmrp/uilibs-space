@@ -15,9 +15,15 @@ interface Library {
   id: string
   name: string
   description: string
+  about: string
   author: string
-  category: string
-  tags: string[]
+  author_bio: string
+  website: string | null
+  github: string | null
+  preview: string | null
+  gallery: string[]
+  created_at: string
+  updated_at: string
 }
 
 interface CommandDialogProps {
@@ -31,16 +37,16 @@ export function CommandDialog({ open, onOpenChange, libraries, onSelect }: Comma
   return (
     <CommandDialogPrimitive open={open} onOpenChange={onOpenChange}>
       <DialogHeader>
-        <DialogTitle></DialogTitle>
+        <DialogTitle>Search Libraries</DialogTitle>
       </DialogHeader>
-      <CommandInput placeholder="Search libraries..." />
+      <CommandInput placeholder="Search by name, description, or author..." />
       <CommandList>
         <CommandEmpty>No libraries found.</CommandEmpty>
         <CommandGroup>
           {libraries.map((library) => (
             <CommandItem
               key={library.id}
-              value={`${library.name} ${library.description} ${library.author} ${library.tags.join(" ")}`}
+              value={`${library.name} ${library.description} ${library.author}`}
               onSelect={() => onSelect(library)}
               className="flex items-center justify-between"
             >

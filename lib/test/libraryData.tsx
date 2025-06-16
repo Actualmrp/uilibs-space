@@ -8,7 +8,6 @@ export interface Library {
   github: string
   preview: string
   gallery: string[]
-  installation: string
 }
 
 export interface LibraryData {
@@ -29,8 +28,6 @@ export const libraryData: LibraryData = {
       "https://images.guns.lol/gGwIN.png",
       "https://images.guns.lol/z0WG4.png"
     ],
-    installation: "npm install @radix-ui/react-* class-variance-authority clsx tailwind-merge",
-    
     about: `A comprehensive UI library that brings the modern Fluent Design System and Windows 11 aesthetics to your applications. Features a clean, minimalist interface with smooth animations, consistent spacing, and a cohesive design language. Perfect for developers looking to create applications with a professional, contemporary look and feel.
 ## ⚡ Features
 
