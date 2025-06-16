@@ -9,7 +9,15 @@ import Image from "next/image"
 import Link from "next/link"
 import { CommandDialog } from "@/components/command-dialog"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Pagination } from "@/components/pagination"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 import { Badge } from "@/components/ui/badge"
 
@@ -145,8 +153,47 @@ export default function HomePage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="mt-12 flex justify-center">
-                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+              <div className="mt-12">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        href="#" 
+                        onClick={(e) => {
+                          e.preventDefault()
+                          if (currentPage > 1) setCurrentPage(currentPage - 1)
+                        }}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            setCurrentPage(page)
+                          }}
+                          isActive={currentPage === page}
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+
+                    <PaginationItem>
+                      <PaginationNext 
+                        href="#" 
+                        onClick={(e) => {
+                          e.preventDefault()
+                          if (currentPage < totalPages) setCurrentPage(currentPage + 1)
+                        }}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
               </div>
             )}
 
