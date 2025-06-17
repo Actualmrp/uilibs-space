@@ -3,8 +3,18 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
   // Allow access to public routes without authentication
-  if (request.nextUrl.pathname.startsWith('/library/')) {
+  if (
+    request.nextUrl.pathname.startsWith('/library/') ||
+    request.nextUrl.pathname === '/' ||
+    request.nextUrl.pathname === '/main'
+  ) {
     return NextResponse.next();
+  }
+
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth/login'
+    return NextResponse.redirect(url)
   }
   
   let supabaseResponse = NextResponse.next({

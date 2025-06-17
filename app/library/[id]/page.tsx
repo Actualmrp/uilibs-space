@@ -71,13 +71,6 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
       siteName: "Roblox UI Library",
       url: `${baseUrl}/library/${params.id}`,
     },
-    twitter: {
-      card: "summary_large_image",
-      title: library.name,
-      description: library.description || "",
-      images: [imageUrl],
-    },
-    // Add robots meta to ensure this page is indexed separately
     robots: {
       index: true,
       follow: true,
