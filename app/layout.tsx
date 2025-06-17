@@ -12,7 +12,11 @@ import { Button } from "@/components/ui/button"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "UI Libraries [Beta]",
+  // Remove or make these more generic so they don't override page-specific metadata
+  title: {
+    template: '%s | UI Libraries',
+    default: 'UI Libraries [Beta]',
+  },
   description: "Discover component libraries for your scripts",
   icons: {
     icon: [
@@ -20,22 +24,20 @@ export const metadata: Metadata = {
       { url: "/icon.png", type: "image/png" },
     ],
   },
-  // openGraph: {
-  //   title: "UI Libraries [Beta]",
-  //   description: "Discover component libraries for your scripts",
-  //   url: process.env.NEXT_PUBLIC_URL,
-  //   siteName: "UI Libraries",
-  //   images: [
-  //     {
-  //       url: "/og-image.png",
-  //       width: 1200,
-  //       height: 630,
-  //       alt: "UI Libraries Preview",
-  //     },
-  //   ],
-  //   locale: "en_US",
-  //   type: "website",
-  // },
+  // Only include global OpenGraph data that should apply to all pages
+  openGraph: {
+    siteName: "UI Libraries",
+    locale: "en_US",
+    type: "website",
+    images: [
+      {
+        url: "/banner.png",
+        width: 1200,
+        height: 630,
+        alt: `Banner preview`,
+      },
+    ],
+  },
 }
 
 export default function RootLayout({
