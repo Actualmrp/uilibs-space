@@ -2,12 +2,14 @@ import { createClient } from "@/lib/client";
 import { Metadata } from "next";
 import LibraryPageClient from "./client";
 
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const supabase = createClient();
+  const { id } = await params;
+  
   const { data: library } = await supabase
     .from("libraries")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://libs.xrer.space';
@@ -18,6 +20,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     return {
       title: "Library Not Found",
       description: "The requested library does not exist.",
+      metadataBase: new URL(baseUrl),
       openGraph: {
         title: "Library Not Found",
         description: "The requested library does not exist.",
@@ -31,7 +34,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
         ],
         type: "website",
         siteName: "Roblox UI Library",
-        url: `${baseUrl}/library/${params.id}`,
+        url: `${baseUrl}/library/${id}`,
       },
       twitter: {
         card: "summary_large_image",
@@ -40,22 +43,23 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
         images: [notFoundImageUrl],
       },
       robots: {
-        index: false, // Don't index 404 pages
+        index: false,
         follow: false,
       },
       alternates: {
-        canonical: `${baseUrl}/library/${params.id}`,
+        canonical: `${baseUrl}/library/${id}`,
       },
     };
   }
 
   const imageUrl = library.preview
     ? `https://pamgxjfckwyvefsnbtfp.supabase.co/storage/v1/object/public/libraries/${library.preview}`
-    : `${baseUrl}/404notfoundlibrary.png`; // Fallback to 404 image if no preview
+    : `${baseUrl}/404notfoundlibrary.png`;
 
   return {
     title: `${library.name} – Roblox Library`,
     description: library.description || "A Roblox library available in the community collection.",
+    metadataBase: new URL(baseUrl),
     openGraph: {
       title: library.name,
       description: library.description || "Explore this Roblox library.",
@@ -69,19 +73,25 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
       ],
       type: "website",
       siteName: "Roblox UI Library",
-      url: `${baseUrl}/library/${params.id}`,
+      url: `${baseUrl}/library/${id}`,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: library.name,
+      description: library.description || "Explore this Roblox library.",
+      images: [imageUrl],
     },
     robots: {
       index: true,
       follow: true,
     },
-    // Add canonical URL
     alternates: {
-      canonical: `${baseUrl}/library/${params.id}`,
+      canonical: `${baseUrl}/library/${id}`,
     },
   };
 }
 
-export default async function LibraryPage({ params }: { params: { id: string } }) {
-  return <LibraryPageClient id={params.id} />;
+export default async function LibraryPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <LibraryPageClient id={id} />;
 }

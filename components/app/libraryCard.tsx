@@ -9,6 +9,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { LibraryBadges } from "@/components/ui/library-badges";
 
 interface Library {
   id: string;
@@ -23,6 +24,9 @@ interface Library {
   gallery: string[];
   created_at: string;
   updated_at: string;
+  tags: string[];
+  is_paid: boolean;
+  is_mobile_friendly: boolean;
 }
 
 export function LibraryCard({ library }: { library: Library }) {
@@ -47,6 +51,13 @@ export function LibraryCard({ library }: { library: Library }) {
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
+        <div className="absolute top-2 left-2 z-10">
+          <LibraryBadges
+            tags={library.tags || []}
+            isPaid={library.is_paid}
+            isMobileFriendly={library.is_mobile_friendly}
+          />
+        </div>
       </div>
       <CardHeader className="p-4">
         <div className="flex items-start">

@@ -2,21 +2,6 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
-  // Allow access to public routes without authentication
-  if (
-    request.nextUrl.pathname.startsWith('/library/') ||
-    request.nextUrl.pathname === '/' ||
-    request.nextUrl.pathname === '/main'
-  ) {
-    return NextResponse.next();
-  }
-
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/auth/login'
-    return NextResponse.redirect(url)
-  }
-  
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -42,10 +27,45 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
+  // Get user session
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Allow access to public routes without authentication
+  if (
+    request.nextUrl.pathname.startsWith('/library/') ||
+    request.nextUrl.pathname === '/' ||
+    request.nextUrl.pathname === '/main'
+  ) {
+    return NextResponse.next();
+  }
+
+  // Check admin access
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    if (!user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/auth/login'
+      return NextResponse.redirect(url)
+    }
+
+    // Check if user has admin role
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.role !== 'admin') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      return NextResponse.redirect(url)
+    }
+
+    return NextResponse.next()
+  }
+
+  // Handle other protected routes
   if (
     !user &&
     !request.nextUrl.pathname.startsWith('/login') &&

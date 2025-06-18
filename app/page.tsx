@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, Command, MessageSquare } from "lucide-react"
+import { Search, Filter, Plus } from "lucide-react"
 import { CommandDialog } from "@/components/command-dialog"
 import { ThemeToggle } from "@/components/theme-toggle"
 import {
@@ -22,7 +22,9 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog"
+import { Switch } from "@/components/ui/switch"
 import { createClient } from "@/lib/client"
 import { LibraryCard } from "@/components/app/libraryCard"
 
@@ -41,71 +43,83 @@ interface Library {
   gallery: string[]
   created_at: string
   updated_at: string
+  tags: string[]
+  is_paid: boolean
+  is_mobile_friendly: boolean
 }
 
 export default function HomePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [commandOpen, setCommandOpen] = useState(false)
-  const [discordDialogOpen, setDiscordDialogOpen] = useState(false)
   const [libraries, setLibraries] = useState<Library[]>([])
   const [loading, setLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [commandOpen, setCommandOpen] = useState(false)
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false)
+  const [filters, setFilters] = useState({
+    showPaid: true,
+    showFree: true,
+    mobileFriendly: false,
+    selectedTags: [] as string[],
+  })
 
-  // Get current search and page from URL
-  const currentSearch = searchParams.get('search') || ''
+  const currentSearch = searchParams.get('search') || ""
   const currentPage = Number(searchParams.get('page')) || 1
 
   useEffect(() => {
     const fetchLibraries = async () => {
-      try {
-        const supabase = createClient()
-        const { data, error } = await supabase
-          .from('libraries')
-          .select('*')
-          .order('created_at', { ascending: false })
-
-        if (error) throw error
-        setLibraries(data || [])
-      } catch (error) {
-        console.error('Error fetching libraries:', error)
-      } finally {
-        setLoading(false)
+      const supabase = createClient()
+      
+      // Check if user is admin
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single()
+        setIsAdmin(profile?.role === "admin")
       }
+
+      // Fetch libraries
+      const { data } = await supabase
+        .from("libraries")
+        .select("*")
+        .order("created_at", { ascending: false })
+
+      if (data) {
+        setLibraries(data)
+      }
+      setLoading(false)
     }
 
     fetchLibraries()
   }, [])
 
-  useEffect(() => {
-    // Check if we should show the Discord modal
-    const checkDiscordModal = () => {
-      const lastShown = localStorage.getItem('discordModalLastShown')
-      const now = new Date().getTime()
-      
-      if (!lastShown) {
-        // First time visitor
-        setDiscordDialogOpen(true)
-        localStorage.setItem('discordModalLastShown', now.toString())
-        return
-      }
-
-      const oneDay = 24 * 60 * 60 * 1000 // 24 hours in milliseconds
-      const timeSinceLastShown = now - parseInt(lastShown)
-
-      if (timeSinceLastShown >= oneDay) {
-        setDiscordDialogOpen(true)
-        localStorage.setItem('discordModalLastShown', now.toString())
-      }
-    }
-
-    checkDiscordModal()
-  }, [])
+  // Get all unique tags from libraries
+  const allTags = Array.from(new Set(libraries.flatMap(lib => lib.tags || [])))
 
   const filteredLibraries = libraries.filter(
-    (library) =>
-      library.name.toLowerCase().includes(currentSearch.toLowerCase()) ||
-      library.description.toLowerCase().includes(currentSearch.toLowerCase()) ||
-      library.author.toLowerCase().includes(currentSearch.toLowerCase())
+    (library) => {
+      const matchesSearch = 
+        library.name.toLowerCase().includes(currentSearch.toLowerCase()) ||
+        library.description.toLowerCase().includes(currentSearch.toLowerCase()) ||
+        library.author.toLowerCase().includes(currentSearch.toLowerCase())
+
+      const matchesPaidFilter = 
+        (library.is_paid && filters.showPaid) || 
+        (!library.is_paid && filters.showFree)
+
+      const matchesMobileFilter = 
+        !filters.mobileFriendly || 
+        library.is_mobile_friendly
+
+      const matchesTags = 
+        filters.selectedTags.length === 0 || 
+        filters.selectedTags.some(tag => library.tags?.includes(tag))
+
+      return matchesSearch && matchesPaidFilter && matchesMobileFilter && matchesTags
+    }
   )
 
   const totalPages = Math.ceil(filteredLibraries.length / ITEMS_PER_PAGE)
@@ -127,6 +141,15 @@ export default function HomePage() {
     const params = new URLSearchParams(searchParams.toString())
     params.set('page', page.toString())
     router.push(`/?${params.toString()}`)
+  }
+
+  const handleTagToggle = (tag: string) => {
+    setFilters(prev => ({
+      ...prev,
+      selectedTags: prev.selectedTags.includes(tag)
+        ? prev.selectedTags.filter(t => t !== tag)
+        : [...prev.selectedTags, tag]
+    }))
   }
 
   useEffect(() => {
@@ -158,7 +181,6 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              
               <div className="w-10 h-10">
                 <svg width="40" height="40" viewBox="0 0 108 109" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M10 10H42V99H10V10Z" fill="currentColor" fillOpacity="0.4"/>
@@ -178,86 +200,116 @@ export default function HomePage() {
                 <p className="text-muted-foreground mt-2">Discover component libraries for your scripts</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <Dialog open={discordDialogOpen} onOpenChange={setDiscordDialogOpen}>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>Join Our Discord Community</DialogTitle>
-                    <DialogDescription>
-                      Join our Discord server to share your UI libraries and connect with other developers!
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-6 py-4">
-                    <div>
-                      <h3 className="font-semibold mb-2">Forum Name: uilibs</h3>
-                      <p className="text-sm text-muted-foreground">Share your UI libraries and get them featured on our platform!</p>
-                    </div>
-                    
-                    <div>
-                      <h3 className="font-semibold mb-2">Publishing Rules:</h3>
-                      <ul className="list-disc pl-6 space-y-2 text-sm">
-                        <li>Only UI-libraries for Roblox are allowed. Off-topic posts are not permitted.</li>
-                        <li>When posting a UI-library, please include:</li>
-                        <ul className="list-disc pl-6 space-y-1 mt-1">
-                          <li>Library name</li>
-                          <li>Author's name (if known)</li>
-                          <li>1 main preview image</li>
-                          <li>Additional screenshots (preview)</li>
-                          <li>Brief description (info)</li>
-                          <li>Link to GitHub (if available)</li>
-                          <li>Link to official website (if available)</li>
-                        </ul>
-                      </ul>
-                    </div>
-
-                    <div className="pt-4">
-                      <Button 
-                        className="w-full" 
-                        onClick={() => {
-                          window.open('https://discord.gg/fHP8T9jNJW', '_blank')
-                          setDiscordDialogOpen(false)
-                        }}
-                      >
-                        Join Discord Server
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+            <div className="flex items-center gap-2">
+              {isAdmin && (
+                <Button onClick={() => router.push('/admin/new')} className="mr-2">
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Library
+                </Button>
+              )}
               <ThemeToggle />
             </div>
+          </div>
+
+          <div className="mt-8 flex gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                value={currentSearch}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="pl-9"
+                placeholder="Search libraries..."
+              />
+            </div>
+            <Dialog open={filterDialogOpen} onOpenChange={setFilterDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Filter className="w-4 h-4" />
+                  Filters
+                  {(filters.showPaid !== filters.showFree || filters.mobileFriendly || filters.selectedTags.length > 0) && (
+                    <Badge variant="secondary" className="ml-2">
+                      {filters.selectedTags.length +
+                        (filters.showPaid !== filters.showFree ? 1 : 0) +
+                        (filters.mobileFriendly ? 1 : 0)}
+                    </Badge>
+                  )}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Filter Libraries</DialogTitle>
+                  <DialogDescription>
+                    Select filters to narrow down the libraries
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-6 py-4">
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Price</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm">Show Paid Libraries</label>
+                        <Switch
+                          checked={filters.showPaid}
+                          onCheckedChange={(checked) => setFilters(prev => ({ ...prev, showPaid: checked }))}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm">Show Free Libraries</label>
+                        <Switch
+                          checked={filters.showFree}
+                          onCheckedChange={(checked) => setFilters(prev => ({ ...prev, showFree: checked }))}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Features</h4>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm">Mobile Friendly Only</label>
+                      <Switch
+                        checked={filters.mobileFriendly}
+                        onCheckedChange={(checked) => setFilters(prev => ({ ...prev, mobileFriendly: checked }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Tags</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {allTags.map((tag) => (
+                        <Badge
+                          key={tag}
+                          variant={filters.selectedTags.includes(tag) ? "default" : "outline"}
+                          className="cursor-pointer"
+                          onClick={() => handleTagToggle(tag)}
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </header>
 
-      {/* Search */}
-      <section className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex gap-3 max-w-2xl">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Search libraries..."
-              value={currentSearch}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Button variant="outline" onClick={() => setCommandOpen(true)} className="flex items-center gap-2">
-            <Command className="w-4 h-4" />
-            <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-              ⌘K
-            </kbd>
-          </Button>
-        </div>
-      </section>
-
-      {/* Libraries */}
-      <main className="max-w-6xl mx-auto px-6 pb-16">
+      <main className="max-w-6xl mx-auto px-6 pb-16 mt-12">
         {filteredLibraries.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-muted-foreground text-lg">No libraries found</p>
-            <Button variant="outline" onClick={() => handleSearch('')} className="mt-4">
-              Clear search
+            <Button variant="outline" onClick={() => {
+              handleSearch('')
+              setFilters({
+                showPaid: true,
+                showFree: true,
+                mobileFriendly: false,
+                selectedTags: [],
+              })
+            }} className="mt-4">
+              Clear all filters
             </Button>
           </div>
         ) : (

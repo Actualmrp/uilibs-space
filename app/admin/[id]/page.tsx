@@ -7,9 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useSupabaseUpload } from "@/hooks/use-supabase-upload"
-import { ArrowLeft, Trash2 } from "lucide-react"
+import { ArrowLeft, Trash2, X } from "lucide-react"
 import Link from "next/link"
-import { Dropzone, DropzoneContent, DropzoneEmptyState } from "@/components/dropzone"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +21,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { v4 as uuidv4 } from 'uuid'
+import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge"
+import { MarkdownEditor } from "@/components/ui/markdown-editor"
+import { ImageManager } from "@/components/ui/image-manager"
 
 interface PageProps {
   params: Promise<{
@@ -43,11 +46,15 @@ export default function EditLibraryPage({ params }: PageProps) {
     author_bio: "",
     website: "",
     github: "",
+    is_paid: false,
+    is_mobile_friendly: false,
+    tags: [] as string[],
   })
   const [existingImages, setExistingImages] = useState<{ preview: string | null; gallery: string[] }>({
     preview: null,
     gallery: [],
   })
+  const [newTag, setNewTag] = useState("")
 
   // Generate a unique folder name for this library
   const folderName = formData.name 
@@ -87,6 +94,9 @@ export default function EditLibraryPage({ params }: PageProps) {
         author_bio: data.author_bio,
         website: data.website,
         github: data.github,
+        is_paid: data.is_paid || false,
+        is_mobile_friendly: data.is_mobile_friendly || false,
+        tags: data.tags || [],
       })
 
       setExistingImages({
@@ -156,6 +166,37 @@ export default function EditLibraryPage({ params }: PageProps) {
     }
   }
 
+  const handleAddTag = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && newTag.trim()) {
+      e.preventDefault()
+      if (!formData.tags.includes(newTag.trim())) {
+        setFormData({
+          ...formData,
+          tags: [...formData.tags, newTag.trim()]
+        })
+      }
+      setNewTag("")
+    }
+  }
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setFormData({
+      ...formData,
+      tags: formData.tags.filter(tag => tag !== tagToRemove)
+    })
+  }
+
+  const handleRemoveImage = (path: string) => {
+    if (path === existingImages.preview) {
+      setExistingImages(prev => ({ ...prev, preview: null }))
+    } else {
+      setExistingImages(prev => ({
+        ...prev,
+        gallery: prev.gallery.filter(img => img !== path)
+      }))
+    }
+  }
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>
   }
@@ -219,11 +260,9 @@ export default function EditLibraryPage({ params }: PageProps) {
 
           <div>
             <label className="block text-sm font-medium mb-2">About</label>
-            <Textarea
-              required
+            <MarkdownEditor
               value={formData.about}
-              onChange={(e) => setFormData({ ...formData, about: e.target.value })}
-              className="min-h-[200px]"
+              onChange={(value) => setFormData({ ...formData, about: value })}
             />
           </div>
 
@@ -262,12 +301,57 @@ export default function EditLibraryPage({ params }: PageProps) {
             />
           </div>
 
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Paid Library</label>
+              <Switch
+                checked={formData.is_paid}
+                onCheckedChange={(checked) => setFormData({ ...formData, is_paid: checked })}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Mobile Friendly</label>
+              <Switch
+                checked={formData.is_mobile_friendly}
+                onCheckedChange={(checked) => setFormData({ ...formData, is_mobile_friendly: checked })}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Tags</label>
+            <div className="space-y-2">
+              <Input
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                onKeyDown={handleAddTag}
+                placeholder="Type a tag and press Enter"
+              />
+              <div className="flex flex-wrap gap-2">
+                {formData.tags.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(tag)}
+                      className="ml-1 hover:text-destructive"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium mb-2">Images</label>
-            <Dropzone {...uploadProps}>
-              <DropzoneEmptyState />
-              <DropzoneContent />
-            </Dropzone>
+            <ImageManager
+              existingImages={existingImages}
+              uploadProps={uploadProps}
+              onRemoveExisting={handleRemoveImage}
+            />
           </div>
 
           <Button type="submit" disabled={saving || uploadProps.loading || !formData.name}>

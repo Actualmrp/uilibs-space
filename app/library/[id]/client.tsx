@@ -5,12 +5,24 @@ import Link from "next/link";
 import { use } from "react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ExternalLink, Github } from "lucide-react";
-import { notFound } from "next/navigation";
+import { ArrowLeft, ExternalLink, Github, Trash2 } from "lucide-react";
+import { notFound, useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ImageViewer } from "@/components/image-viewer";
 import { MarkdownExample } from "@/components/markdown-example";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LibraryBadges } from "@/components/ui/library-badges";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 import { createClient } from "@/lib/client";
 
@@ -27,6 +39,9 @@ interface Library {
   gallery: string[];
   created_at: string;
   updated_at: string;
+  tags: string[];
+  is_paid: boolean;
+  is_mobile_friendly: boolean;
 }
 
 interface PageProps {
@@ -34,10 +49,12 @@ interface PageProps {
 }
 
 export default function LibraryPageClient({ id }: PageProps) {
+  const router = useRouter();
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [library, setLibrary] = useState<Library | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const getImageUrl = (path: string | null) => {
     if (!path) return "/placeholder.svg";
@@ -49,6 +66,18 @@ export default function LibraryPageClient({ id }: PageProps) {
     const fetchLibrary = async () => {
       try {
         const supabase = createClient();
+        
+        // Check if user is admin
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+          setIsAdmin(profile?.role === "admin");
+        }
+
         const { data, error } = await supabase
           .from("libraries")
           .select("*")
@@ -67,6 +96,21 @@ export default function LibraryPageClient({ id }: PageProps) {
 
     fetchLibrary();
   }, [id]);
+
+  const handleDelete = async () => {
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("libraries")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      router.push("/");
+    } catch (error) {
+      console.error("Error deleting library:", error);
+    }
+  };
 
   if (loading) {
     return (
@@ -179,31 +223,45 @@ export default function LibraryPageClient({ id }: PageProps) {
                   rel="noopener noreferrer"
                 >
                   <Button size="sm" variant="outline" className="sm:hidden">
-                    <svg
-                      className="w-5 h-5"
-                      fill="currentColor"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M10.9,2.1c-4.6,0.5-8.3,4.2-8.8,8.7c-0.6,5,2.5,9.3,6.9,10.7v-2.3c0,0-0.4,0.1-0.9,0.1c-1.4,0-2-1.2-2.1-1.9 c-0.1-0.4-0.3-0.7-0.6-1C5.1,16.3,5,16.3,5,16.2C5,16,5.3,16,5.4,16c0.6,0,1.1,0.7,1.3,1c0.5,0.8,1.1,1,1.4,1c0.4,0,0.7-0.1,0.9-0.2 c0.1-0.7,0.4-1.4,1-1.8c-2.3-0.5-4-1.8-4-4c0-1.1,0.5-2.2,1.2-3C7.1,8.8,7,8.3,7,7.6C7,7.2,7,6.6,7.3,6c0,0,1.4,0,2.8,1.3 C10.6,7.1,11.3,7,12,7s1.4,0.1,2,0.3C15.3,6,16.8,6,16.8,6C17,6.6,17,7.2,17,7.6c0,0.8-0.1,1.2-0.2,1.4c0.7,0.8,1.2,1.8,1.2,3 c0,2.2-1.7,3.5-4,4c0.6,0.5,1,1.4,1,2.3v3.3c4.1-1.3,7-5.1,7-9.5C22,6.1,16.9,1.4,10.9,2.1z"></path>
-                    </svg>
+                    <Github className="w-4 h-4" />
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     className="hidden sm:flex"
                   >
-                    <svg
-                      className="w-5 h-5 mr-1"
-                      fill="currentColor"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M10.9,2.1c-4.6,0.5-8.3,4.2-8.8,8.7c-0.6,5,2.5,9.3,6.9,10.7v-2.3c0,0-0.4,0.1-0.9,0.1c-1.4,0-2-1.2-2.1-1.9 c-0.1-0.4-0.3-0.7-0.6-1C5.1,16.3,5,16.3,5,16.2C5,16,5.3,16,5.4,16c0.6,0,1.1,0.7,1.3,1c0.5,0.8,1.1,1,1.4,1c0.4,0,0.7-0.1,0.9-0.2 c0.1-0.7,0.4-1.4,1-1.8c-2.3-0.5-4-1.8-4-4c0-1.1,0.5-2.2,1.2-3C7.1,8.8,7,8.3,7,7.6C7,7.2,7,6.6,7.3,6c0,0,1.4,0,2.8,1.3 C10.6,7.1,11.3,7,12,7s1.4,0.1,2,0.3C15.3,6,16.8,6,16.8,6C17,6.6,17,7.2,17,7.6c0,0.8-0.1,1.2-0.2,1.4c0.7,0.8,1.2,1.8,1.2,3 c0,2.2-1.7,3.5-4,4c0.6,0.5,1,1.4,1,2.3v3.3c4.1-1.3,7-5.1,7-9.5C22,6.1,16.9,1.4,10.9,2.1z"></path>
-                    </svg>
+                    <Github className="w-4 h-4 mr-2" />
                     GitHub
                   </Button>
                 </Link>
+              )}
+              {isAdmin && (
+                <>
+                  <Link href={`/admin/${library.id}`}>
+                    <Button size="sm" variant="outline">
+                      Edit
+                    </Button>
+                  </Link>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="destructive">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Library</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this library? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
               )}
               <ThemeToggle />
             </div>
@@ -214,10 +272,10 @@ export default function LibraryPageClient({ id }: PageProps) {
       <main className="max-w-3xl mx-auto px-6 py-8">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Hero Image */}
+          {/* Hero Image with Badges */}
           {library.preview && (
             <div
-              className="relative h-64 bg-muted rounded-lg overflow-hidden cursor-pointer group"
+              className="relative aspect-[16/9] bg-muted rounded-lg overflow-hidden cursor-pointer group"
               onClick={() => openImageViewer(0)}
             >
               <Image
@@ -226,8 +284,16 @@ export default function LibraryPageClient({ id }: PageProps) {
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
               />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200 flex items-center justify-center">
-                <div className="bg-background/80 backdrop-blur-sm px-3 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              {/* Badges Overlay */}
+              <div className="absolute top-4 left-4 z-10">
+                <LibraryBadges
+                  tags={library.tags || []}
+                  isPaid={library.is_paid}
+                  isMobileFriendly={library.is_mobile_friendly}
+                />
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                <div className="bg-background/80 backdrop-blur-sm px-3 py-1 rounded text-sm">
                   Click to view
                 </div>
               </div>
@@ -250,7 +316,7 @@ export default function LibraryPageClient({ id }: PageProps) {
                 {library.gallery.map((image, index) => (
                   <div
                     key={index}
-                    className="relative h-32 bg-muted rounded overflow-hidden cursor-pointer group"
+                    className="relative aspect-video bg-muted rounded overflow-hidden cursor-pointer group"
                     onClick={() => openImageViewer(index + 1)}
                   >
                     <Image
