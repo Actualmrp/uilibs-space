@@ -10,6 +10,9 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { LibraryBadges } from "@/components/ui/library-badges";
+import { Heart } from "lucide-react";
+import { useFavorites } from "@/hooks/use-favorites";
+import { cn } from "@/lib/utils";
 
 interface Library {
   id: string;
@@ -31,6 +34,8 @@ interface Library {
 
 export function LibraryCard({ library }: { library: Library }) {
   const router = useRouter();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const favorite = isFavorite(library.id);
 
   // Function to get the full URL for Supabase storage images
   const getImageUrl = (path: string | null) => {
@@ -53,11 +58,31 @@ export function LibraryCard({ library }: { library: Library }) {
         />
         <div className="absolute top-2 left-2 z-10">
           <LibraryBadges
-            tags={library.tags || []}
+            tags={[]}
             isPaid={library.is_paid}
             isMobileFriendly={library.is_mobile_friendly}
           />
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "absolute top-2 right-2 z-10 h-7 w-7 bg-background/50 backdrop-blur-sm hover:bg-background/70",
+            favorite && "text-red-500 hover:text-red-600 hover:bg-background/70"
+          )}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleFavorite(library.id);
+          }}
+          title={favorite ? "Remove from Favorites" : "Add to Favorites"}
+        >
+          <Heart
+            className={cn(
+              "w-3.5 h-3.5",
+              favorite ? "fill-current" : "fill-none"
+            )}
+          />
+        </Button>
       </div>
       <CardHeader className="p-4">
         <div className="flex items-start">

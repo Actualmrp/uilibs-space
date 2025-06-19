@@ -5,7 +5,7 @@ import Link from "next/link";
 import { use } from "react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ExternalLink, Github, Trash2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, Github, Trash2, Tag, Heart } from "lucide-react";
 import { notFound, useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ImageViewer } from "@/components/image-viewer";
@@ -23,8 +23,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 import { createClient } from "@/lib/client";
+import { useFavorites } from "@/hooks/use-favorites";
+import { cn } from "@/lib/utils";
 
 interface Library {
   id: string;
@@ -55,6 +59,8 @@ export default function LibraryPageClient({ id }: PageProps) {
   const [library, setLibrary] = useState<Library | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const favorite = library ? isFavorite(library.id) : false;
 
   const getImageUrl = (path: string | null) => {
     if (!path) return "/placeholder.svg";
@@ -180,39 +186,51 @@ export default function LibraryPageClient({ id }: PageProps) {
     <div className="min-h-screen">
       {/* Header */}
       <header className="border-b sticky top-0 bg-background/80 backdrop-blur-sm z-40">
-        <div className="max-w-5xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/">
-                <Button variant="ghost" size="sm">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <Link href="/" className="flex-shrink-0">
+                <Button variant="ghost" size="sm" className="h-8 sm:h-9">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back
                 </Button>
               </Link>
-              <div>
-                <h1 className="text-xl font-semibold">{library.name}</h1>
-                <p className="text-sm text-muted-foreground">
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-xl font-semibold truncate">{library.name}</h1>
+                <p className="text-sm text-muted-foreground truncate">
                   by {library.author}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 sm:ml-auto">
+              <Button
+                size="sm"
+                variant="ghost"
+                className={cn(
+                  "h-8 sm:h-9",
+                  favorite && "text-red-500 hover:text-red-600"
+                )}
+                onClick={() => toggleFavorite(library.id)}
+              >
+                <Heart
+                  className={cn(
+                    "w-4 h-4 sm:mr-2",
+                    favorite ? "fill-current" : "fill-none"
+                  )}
+                />
+                <span className="hidden sm:inline">
+                  {favorite ? "Remove from Favorites" : "Add to Favorites"}
+                </span>
+              </Button>
               {library.website && (
                 <Link
                   href={library.website}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Button size="sm" variant="outline" className="sm:hidden">
-                    <ExternalLink className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="hidden sm:flex"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Website
+                  <Button size="sm" variant="outline" className="h-8 sm:h-9">
+                    <ExternalLink className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Website</span>
                   </Button>
                 </Link>
               )}
@@ -222,33 +240,26 @@ export default function LibraryPageClient({ id }: PageProps) {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Button size="sm" variant="outline" className="sm:hidden">
-                    <Github className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="hidden sm:flex"
-                  >
-                    <Github className="w-4 h-4 mr-2" />
-                    GitHub
+                  <Button size="sm" variant="outline" className="h-8 sm:h-9">
+                    <Github className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">GitHub</span>
                   </Button>
                 </Link>
               )}
               {isAdmin && (
                 <>
                   <Link href={`/admin/${library.id}`}>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" className="h-8 sm:h-9">
                       Edit
                     </Button>
                   </Link>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button size="sm" variant="destructive">
+                      <Button size="sm" variant="destructive" className="h-8 sm:h-9">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="sm:max-w-[425px]">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete Library</AlertDialogTitle>
                         <AlertDialogDescription>
@@ -269,9 +280,9 @@ export default function LibraryPageClient({ id }: PageProps) {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-6 py-8">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           {/* Hero Image with Badges */}
           {library.preview && (
             <div
@@ -283,11 +294,12 @@ export default function LibraryPageClient({ id }: PageProps) {
                 alt={`${library.name} preview`}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
+                priority
               />
               {/* Badges Overlay */}
-              <div className="absolute top-4 left-4 z-10">
+              <div className="absolute top-3 sm:top-4 left-3 sm:left-4 z-10">
                 <LibraryBadges
-                  tags={library.tags || []}
+                  tags={[]}
                   isPaid={library.is_paid}
                   isMobileFriendly={library.is_mobile_friendly}
                 />
@@ -301,18 +313,18 @@ export default function LibraryPageClient({ id }: PageProps) {
           )}
 
           {/* Description */}
-          <div>
-            <h2 className="text-xl font-semibold mb-3">About</h2>
-            <div className="text-muted-foreground leading-relaxed">
+          <div className="space-y-2 sm:space-y-3">
+            <h2 className="text-lg sm:text-xl font-semibold">About</h2>
+            <div className="text-muted-foreground text-sm sm:text-base leading-relaxed">
               <MarkdownExample content={library.about} />
             </div>
           </div>
 
           {/* Gallery */}
           {library.gallery.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Gallery</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="space-y-3 sm:space-y-4">
+              <h2 className="text-lg sm:text-xl font-semibold">Gallery</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                 {library.gallery.map((image, index) => (
                   <div
                     key={index}
@@ -331,13 +343,45 @@ export default function LibraryPageClient({ id }: PageProps) {
               </div>
             </div>
           )}
+
+          {/* Tags Section */}
+          {library.tags && library.tags.length > 0 && (
+            <>
+              <Separator className="my-6 sm:my-8" />
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Tag className="w-4 h-4" />
+                  <h2 className="text-lg sm:text-xl font-semibold text-foreground">Tags</h2>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {library.tags.map((tag) => (
+                    <Link 
+                      key={tag} 
+                      href={`/?tags=${tag}`}
+                      className="transition-colors"
+                    >
+                      <Badge 
+                        variant="secondary" 
+                        className="px-3 py-1 hover:bg-secondary/80"
+                      >
+                        {tag}
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Click on a tag to discover more libraries with the same tag
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </main>
 
       {/* Image Viewer */}
       {allImages.length > 0 && (
         <ImageViewer
-          images={allImages}
+          images={allImages.map(img => getImageUrl(img))}
           initialIndex={selectedImageIndex}
           isOpen={imageViewerOpen}
           onClose={() => setImageViewerOpen(false)}
