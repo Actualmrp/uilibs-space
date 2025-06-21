@@ -6,7 +6,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Analytics } from "@vercel/analytics/next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import Script from "next/script"
+import { ConsentBanner } from "@/components/ui/consent-banner"
+import { Scripts } from "@/components/ui/scripts"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -46,22 +47,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5314941457054624"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-          onError={() => {
-            // Silently handle ad blocker - don't show errors in console
-            console.log("AdSense script blocked by ad blocker")
-          }}
-        />
-      </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}
           <Analytics/>
+          
+          {/* Scripts Component */}
+          <Scripts />
+          
+          {/* Consent Banner */}
+          <ConsentBanner />
+          
           {/* Footer */}
           <footer className="border-t mt-16">
             <div className="max-w-6xl mx-auto px-6 py-8">
