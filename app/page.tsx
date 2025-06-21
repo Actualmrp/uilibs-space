@@ -35,6 +35,7 @@ import { LibraryCard } from "@/components/app/libraryCard"
 import { useDebounce } from "@/hooks/use-debounce"
 import { useFavorites } from "@/hooks/use-favorites"
 import { cn } from "@/lib/utils"
+import { AdSense } from "@/components/ui/adsense"
 
 const ITEMS_PER_PAGE = 6
 
@@ -463,6 +464,15 @@ export default function HomePage() {
               )}
             </div>
           </div>
+
+          {/* AdSense Ad - Under Search */}
+          <div className="mt-6 flex justify-center">
+            <AdSense 
+              adSlot="3745534196" 
+              className="w-full max-w-4xl"
+              style={{ minHeight: "90px" }}
+            />
+          </div>
         </div>
       </header>
 
@@ -532,6 +542,15 @@ export default function HomePage() {
             <div className="mt-6 sm:mt-8 text-center text-sm text-muted-foreground">
               Showing {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, filteredAndSortedLibraries.length)} of{" "}
               {filteredAndSortedLibraries.length} libraries
+            </div>
+
+            {/* AdSense Ad - Bottom of Pagination */}
+            <div className="mt-8 flex justify-center">
+              <AdSense 
+                adSlot="8434754097" 
+                className="w-full max-w-4xl"
+                style={{ minHeight: "90px" }}
+              />
             </div>
           </>
         )}
