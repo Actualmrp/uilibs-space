@@ -19,27 +19,41 @@ interface AdSenseProps {
 export function AdSense({ adSlot, adFormat = "auto", style, className }: AdSenseProps) {
   const [adLoaded, setAdLoaded] = useState(false)
   const [adError, setAdError] = useState(false)
+  const [isAdBlockerDetected, setIsAdBlockerDetected] = useState(false)
 
   useEffect(() => {
     const loadAd = () => {
       try {
-        // Check if AdSense is available
-        if (typeof window !== 'undefined' && window.adsbygoogle) {
-          window.adsbygoogle.push({})
-          setAdLoaded(true)
-        } else {
-          // Retry after a short delay
-          setTimeout(() => {
-            if (typeof window !== 'undefined' && window.adsbygoogle) {
-              window.adsbygoogle.push({})
-              setAdLoaded(true)
-            } else {
+        // Check if AdSense script is loaded
+        if (typeof window !== 'undefined') {
+          // Check if adsbygoogle exists
+          if (window.adsbygoogle) {
+            window.adsbygoogle.push({})
+            setAdLoaded(true)
+          } else {
+            // Check if script failed to load (ad blocker)
+            const scriptElement = document.querySelector('script[src*="adsbygoogle"]')
+            if (!scriptElement) {
+              setIsAdBlockerDetected(true)
               setAdError(true)
+              return
             }
-          }, 1000)
+            
+            // Retry after a short delay
+            setTimeout(() => {
+              if (window.adsbygoogle) {
+                window.adsbygoogle.push({})
+                setAdLoaded(true)
+              } else {
+                setIsAdBlockerDetected(true)
+                setAdError(true)
+              }
+            }, 2000)
+          }
         }
       } catch (error) {
         console.error("AdSense error:", error)
+        setIsAdBlockerDetected(true)
         setAdError(true)
       }
     }
@@ -49,8 +63,8 @@ export function AdSense({ adSlot, adFormat = "auto", style, className }: AdSense
     return () => clearTimeout(timer)
   }, [])
 
-  // Don't render anything if there's an error (ad blocker detected)
-  if (adError) {
+  // Don't render anything if ad blocker is detected
+  if (adError || isAdBlockerDetected) {
     return null
   }
 
@@ -66,10 +80,10 @@ export function AdSense({ adSlot, adFormat = "auto", style, className }: AdSense
       />
       {!adLoaded && (
         <div 
-          className="flex items-center justify-center bg-muted rounded"
+          className="flex items-center justify-center bg-muted rounded animate-pulse"
           style={{ minHeight: "90px" }}
         >
-          <div className="text-sm text-muted-foreground">Loading ad...</div>
+          <div className="text-sm text-muted-foreground">Loading...</div>
         </div>
       )}
     </div>

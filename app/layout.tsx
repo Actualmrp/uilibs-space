@@ -52,6 +52,10 @@ export default function RootLayout({
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5314941457054624"
           crossOrigin="anonymous"
           strategy="afterInteractive"
+          onError={() => {
+            // Silently handle ad blocker - don't show errors in console
+            console.log("AdSense script blocked by ad blocker")
+          }}
         />
       </head>
       <body className={inter.className}>
