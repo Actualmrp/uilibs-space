@@ -54,20 +54,20 @@ export function ConsentBanner() {
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t z-50 p-4">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="flex-1">
-            <h3 className="font-medium mb-2">Мы используем cookies</h3>
+            <h3 className="font-medium mb-2">We use cookies</h3>
             <p className="text-sm text-muted-foreground">
-              Мы используем cookies для улучшения работы сайта, анализа трафика и персонализации контента. 
-              Вы можете согласиться со всеми cookies или настроить их по своему усмотрению.
+              We use cookies to improve site performance, analyze traffic, and personalize content. 
+              You can accept all cookies or customize your preferences.
             </p>
           </div>
           <div className="flex gap-2 flex-shrink-0">
             <Button variant="outline" onClick={handleCustomize} size="sm">
               <Settings className="w-4 h-4 mr-2" />
-              Настроить
+              Customize
             </Button>
             <Button onClick={handleAcceptAll} size="sm">
               <Check className="w-4 h-4 mr-2" />
-              Принять все
+              Accept all
             </Button>
           </div>
         </div>
@@ -77,16 +77,16 @@ export function ConsentBanner() {
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Настройки cookies</DialogTitle>
+            <DialogTitle>Cookie settings</DialogTitle>
           </DialogHeader>
           <div className="space-y-6 py-4">
             {/* Necessary Cookies */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">Необходимые cookies</h4>
+                  <h4 className="font-medium">Necessary cookies</h4>
                   <p className="text-sm text-muted-foreground">
-                    Эти cookies необходимы для работы сайта и не могут быть отключены.
+                    These cookies are required for the website to function and cannot be disabled.
                   </p>
                 </div>
                 <Switch checked={preferences.necessary} disabled />
@@ -99,9 +99,9 @@ export function ConsentBanner() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">Аналитические cookies</h4>
+                  <h4 className="font-medium">Analytics cookies</h4>
                   <p className="text-sm text-muted-foreground">
-                    Помогают нам понять, как посетители используют сайт.
+                    Help us understand how visitors use the site.
                   </p>
                 </div>
                 <Switch
@@ -119,9 +119,9 @@ export function ConsentBanner() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">Рекламные cookies</h4>
+                  <h4 className="font-medium">Marketing cookies</h4>
                   <p className="text-sm text-muted-foreground">
-                    Используются для показа релевантной рекламы.
+                    Used to display relevant advertising.
                   </p>
                 </div>
                 <Switch
@@ -139,9 +139,9 @@ export function ConsentBanner() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">Персонализация</h4>
+                  <h4 className="font-medium">Personalization</h4>
                   <p className="text-sm text-muted-foreground">
-                    Позволяют персонализировать контент и функции.
+                    Allow us to personalize content and functionality.
                   </p>
                 </div>
                 <Switch
@@ -156,10 +156,10 @@ export function ConsentBanner() {
 
           <div className="flex gap-2 justify-end">
             <Button variant="outline" onClick={handleRejectAll}>
-              Отклонить все
+              Reject all
             </Button>
             <Button onClick={handleSavePreferences}>
-              Сохранить настройки
+              Save preferences
             </Button>
           </div>
         </DialogContent>

@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import ReactMarkdown from "react-markdown"
+import { Markdown } from "@/components/ui/markdown"
 
 interface MarkdownEditorProps {
   value: string
@@ -85,7 +86,8 @@ export function MarkdownEditor({ value, onChange, className }: MarkdownEditorPro
 
   return (
     <div className={cn("space-y-4", className)}>
-      <div className="flex items-center gap-1 flex-wrap">
+      {/* Toolbar */}
+      <div className="flex items-center gap-1 overflow-x-auto py-1 [&::-webkit-scrollbar]:hidden -mx-1 px-1">
         <Button
           variant="ghost"
           size="sm"
@@ -152,6 +154,7 @@ export function MarkdownEditor({ value, onChange, className }: MarkdownEditorPro
         </Button>
       </div>
 
+      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full">
           <TabsTrigger value="edit" className="flex-1">Edit</TabsTrigger>
@@ -166,8 +169,8 @@ export function MarkdownEditor({ value, onChange, className }: MarkdownEditorPro
           />
         </TabsContent>
         <TabsContent value="preview" className="mt-4">
-          <div className="prose dark:prose-invert max-w-none min-h-[300px] p-4 rounded-md border">
-            <ReactMarkdown>{value}</ReactMarkdown>
+          <div className="border rounded-md p-4 min-h-[300px] overflow-auto bg-background">
+            <Markdown>{value || "_Nothing to preview yet._"}</Markdown>
           </div>
         </TabsContent>
       </Tabs>

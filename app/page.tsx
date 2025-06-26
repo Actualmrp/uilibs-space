@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -36,6 +36,11 @@ import { useDebounce } from "@/hooks/use-debounce"
 import { useFavorites } from "@/hooks/use-favorites"
 import { cn } from "@/lib/utils"
 import { AdSense } from "@/components/ui/adsense"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
+import Image from "next/image"
+import { Badge as UIBadge } from "@/components/ui/badge"
 
 const ITEMS_PER_PAGE = 6
 
@@ -68,9 +73,8 @@ export default function HomePage() {
   const [commandOpen, setCommandOpen] = useState(false)
   const [filterDialogOpen, setFilterDialogOpen] = useState(false)
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || "")
-  const [tagSearch, setTagSearch] = useState("")
+  const [tagInput, setTagInput] = useState("")
   const debouncedSearch = useDebounce(searchInput, 300)
-  const debouncedTagSearch = useDebounce(tagSearch, 300)
   const [sortOption, setSortOption] = useState<SortOption>(
     (searchParams.get('sort') as SortOption) || "newest"
   )
@@ -85,6 +89,10 @@ export default function HomePage() {
   }), [searchParams])
 
   const currentPage = Number(searchParams.get('page')) || 1
+
+  // autocomplete suggestion control
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const suggestionsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const fetchLibraries = async () => {
@@ -122,13 +130,28 @@ export default function HomePage() {
     [libraries]
   )
 
-  // Filter tags based on search
-  const filteredTags = useMemo(() => {
-    if (!debouncedTagSearch) return allTags
-    return allTags.filter(tag => 
-      tag.toLowerCase().includes(debouncedTagSearch.toLowerCase())
-    )
-  }, [allTags, debouncedTagSearch])
+  type Suggestion = { type: 'lib'; library: Library } | { type: 'tag'; tag: string }
+
+  const suggestions: Suggestion[] = useMemo(() => {
+    if (!searchInput.trim()) return []
+    const q = searchInput.toLowerCase()
+
+    const libSuggestions: Suggestion[] = libraries
+      .filter(lib =>
+        lib.name.toLowerCase().includes(q) ||
+        lib.author.toLowerCase().includes(q) ||
+        lib.tags.some(t => t.toLowerCase().includes(q))
+      )
+      .slice(0, 5)
+      .map(lib => ({ type: 'lib', library: lib }))
+
+    const tagSuggestions: Suggestion[] = allTags
+      .filter(tag => tag.toLowerCase().includes(q))
+      .slice(0, 5)
+      .map(tag => ({ type: 'tag', tag }))
+
+    return [...libSuggestions, ...tagSuggestions].slice(0, 6)
+  }, [searchInput, libraries, allTags])
 
   const filteredAndSortedLibraries = useMemo(() => {
     let result = libraries.filter((library) => {
@@ -306,15 +329,52 @@ export default function HomePage() {
           </div>
 
           <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4">
-            <div className="relative flex-1">
+            <div className="relative flex-1" onBlur={(e)=>{
+              // hide suggestions when focus leaves input & suggestion container
+              if(!e.currentTarget.contains(e.relatedTarget as Node)){
+                setShowSuggestions(false);
+              }
+            }}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 type="search"
                 value={searchInput}
-                onChange={(e) => handleSearch(e.target.value)}
+                onChange={(e) => {handleSearch(e.target.value); setShowSuggestions(true);}}
                 className="pl-9"
                 placeholder="Search libraries... (⌘/Ctrl + F)"
               />
+              {showSuggestions && suggestions.length>0 && (
+                <div ref={suggestionsRef} className="absolute z-50 mt-1 w-full bg-background border rounded shadow max-h-72 overflow-auto">
+                  {suggestions.map(sug=> (
+                    <button key={sug.type==='lib'?sug.library.id:sug.tag} className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-3" onMouseDown={(e)=>{
+                      e.preventDefault();
+                      if(sug.type==='lib') handleSearch(sug.library.name); else handleSearch(sug.tag);
+                      setShowSuggestions(false);
+                    }}>
+                      {sug.type==='lib' ? (
+                        <>
+                          <div className="relative w-10 h-10 flex-shrink-0 bg-muted rounded overflow-hidden">
+                            {sug.library.preview && (
+                              <Image src={
+                                sug.library.preview.startsWith('http') ? sug.library.preview : `https://pamgxjfckwyvefsnbtfp.supabase.co/storage/v1/object/public/libraries/${sug.library.preview}`
+                              } fill className="object-cover" alt={sug.library.name}/>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{sug.library.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">{sug.library.author}</p>
+                            <div className="flex gap-1 mt-1">
+                              {sug.library.tags.slice(0,2).map(t=>(<UIBadge key={t} className="text-[10px]" variant="secondary">{t}</UIBadge>))}
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <span>Tag: <span className="font-medium">{sug.tag}</span></span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex gap-2 sm:gap-4">
               <DropdownMenu>
@@ -323,7 +383,7 @@ export default function HomePage() {
                     <SortAsc className="w-4 h-4" />
                     <span className="hidden sm:inline">Sort</span>
                     <Badge variant="secondary" className="ml-2">
-                      {sortOption}
+                      {sortOption.charAt(0).toUpperCase() + sortOption.slice(1)}
                     </Badge>
                   </Button>
                 </DropdownMenuTrigger>
@@ -343,8 +403,8 @@ export default function HomePage() {
                 </DropdownMenuContent>
               </DropdownMenu>
               
-              <Dialog open={filterDialogOpen} onOpenChange={setFilterDialogOpen}>
-                <DialogTrigger asChild>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="flex-1 sm:flex-none items-center gap-2">
                     <Filter className="w-4 h-4" />
                     <span className="hidden sm:inline">Filters</span>
@@ -358,110 +418,66 @@ export default function HomePage() {
                       </Badge>
                     )}
                   </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Filters</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-6">
-                    {/* Pricing Section */}
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-medium">Pricing</h4>
-                      <div className="grid gap-3">
-                        <div className="flex items-center justify-between space-x-2">
-                          <label className="text-sm">Free Libraries</label>
-                          <Switch
-                            checked={filters.showFree}
-                            onCheckedChange={(checked) => handleFilterChange('free', checked)}
-                          />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-72 p-0" align="end">
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-medium">Filters</h3>
+                      {(filters.showPaid !== true || filters.showFree !== true || 
+                        filters.mobileFriendly || filters.selectedTags.length > 0 || filters.onlyFavorites) && (
+                        <Button variant="ghost" size="icon" onClick={clearAllFilters} className="h-6 w-6">
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Pricing */}
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium mb-2">Pricing</h4>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="free" checked={filters.showFree} onCheckedChange={(c)=>handleFilterChange('free', c as boolean)} />
+                          <Label htmlFor="free" className="text-sm">Free</Label>
                         </div>
-                        <div className="flex items-center justify-between space-x-2">
-                          <label className="text-sm">Paid Libraries</label>
-                          <Switch
-                            checked={filters.showPaid}
-                            onCheckedChange={(checked) => handleFilterChange('paid', checked)}
-                          />
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="paid" checked={filters.showPaid} onCheckedChange={(c)=>handleFilterChange('paid', c as boolean)} />
+                          <Label htmlFor="paid" className="text-sm">Paid</Label>
                         </div>
                       </div>
                     </div>
+                    <Separator className="my-2" />
 
-                    {/* Features Section */}
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-medium">Features</h4>
-                      <div className="flex items-center justify-between space-x-2">
-                        <label className="text-sm">Mobile Friendly</label>
-                        <Switch
-                          checked={filters.mobileFriendly}
-                          onCheckedChange={(checked) => handleFilterChange('mobile', checked)}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between space-x-2">
-                        <label className="text-sm">Favorites Only</label>
-                        <Switch
-                          checked={filters.onlyFavorites}
-                          onCheckedChange={(checked) => handleFilterChange('favorites', checked)}
-                        />
+                    {/* Features */}
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium mb-2">Features</h4>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="mobile" checked={filters.mobileFriendly} onCheckedChange={(c)=>handleFilterChange('mobile', c as boolean)} />
+                          <Label htmlFor="mobile" className="text-sm">Mobile Friendly</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox id="fav" checked={filters.onlyFavorites} onCheckedChange={(c)=>handleFilterChange('favorites', c as boolean)} />
+                          <Label htmlFor="fav" className="text-sm">Favorites Only</Label>
+                        </div>
                       </div>
                     </div>
+                    <Separator className="my-2" />
 
-                    {/* Tags Section */}
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium">Tags</h4>
-                        {filters.selectedTags.length > 0 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => updateSearchParams({ tags: null })}
-                            className="h-7 text-xs"
-                          >
-                            Clear ({filters.selectedTags.length})
-                          </Button>
-                        )}
-                      </div>
-                      <Input
-                        placeholder="Search tags..."
-                        value={tagSearch}
-                        onChange={(e) => setTagSearch(e.target.value)}
-                        className="mb-2"
-                      />
-                      <div className="flex flex-wrap gap-1.5 max-h-[200px] overflow-y-auto">
-                        {filteredTags.map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant={filters.selectedTags.includes(tag) ? "default" : "outline"}
-                            className={cn(
-                              "cursor-pointer hover:opacity-80 transition-opacity text-xs py-0.5",
-                              filters.selectedTags.includes(tag) ? "bg-primary" : "bg-background"
-                            )}
-                            onClick={() => handleTagToggle(tag)}
-                          >
+                    {/* Tags */}
+                    <div>
+                      <h4 className="text-sm font-medium mb-2">Tags</h4>
+                      <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto">
+                        {allTags.map(tag=> (
+                          <Badge key={tag} variant={filters.selectedTags.includes(tag)?'default':'outline'} className="cursor-pointer text-xs" onClick={()=>handleTagToggle(tag)}>
                             {tag}
                           </Badge>
                         ))}
-                        {filteredTags.length === 0 && (
-                          <p className="text-sm text-muted-foreground p-2">
-                            No tags found
-                          </p>
-                        )}
+                        {allTags.length===0 && <p className="text-sm text-muted-foreground p-2">No tags</p>}
                       </div>
                     </div>
                   </div>
-                </DialogContent>
-              </Dialog>
-
-              {(debouncedSearch || filters.showPaid !== true || filters.showFree !== true || 
-                filters.mobileFriendly || filters.selectedTags.length > 0 || filters.onlyFavorites || sortOption !== "newest") && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={clearAllFilters}
-                  className="shrink-0"
-                  title="Clear all filters"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 

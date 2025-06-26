@@ -36,7 +36,8 @@ export async function updateSession(request: NextRequest) {
   if (
     request.nextUrl.pathname.startsWith('/library/') ||
     request.nextUrl.pathname === '/' ||
-    request.nextUrl.pathname === '/main'
+    request.nextUrl.pathname === '/main' ||
+    request.nextUrl.pathname === '/changelog'
   ) {
     return NextResponse.next();
   }
