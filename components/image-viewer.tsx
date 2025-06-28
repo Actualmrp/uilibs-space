@@ -1,19 +1,24 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { X, ChevronLeft, ChevronRight } from "lucide-react"
-import Image from "next/image"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import Image from "next/image";
 
 interface ImageViewerProps {
-  images: (string | null)[]
-  initialIndex: number
-  isOpen: boolean
-  onClose: () => void
+  images: (string | null)[];
+  initialIndex: number;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export function ImageViewer({ images, initialIndex, isOpen, onClose }: ImageViewerProps) {
-  const [currentIndex, setCurrentIndex] = useState(initialIndex)
+export function ImageViewer({
+  images,
+  initialIndex,
+  isOpen,
+  onClose,
+}: ImageViewerProps) {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
 
   // Function to get the full URL for Supabase storage images
   const getImageUrl = (path: string | null) => {
@@ -23,51 +28,51 @@ export function ImageViewer({ images, initialIndex, isOpen, onClose }: ImageView
   };
 
   useEffect(() => {
-    setCurrentIndex(initialIndex)
-  }, [initialIndex])
+    setCurrentIndex(initialIndex);
+  }, [initialIndex]);
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = "hidden"
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = "unset"
+      document.body.style.overflow = "unset";
     }
 
     return () => {
-      document.body.style.overflow = "unset"
-    }
-  }, [isOpen])
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isOpen) return
+      if (!isOpen) return;
 
       switch (e.key) {
         case "Escape":
-          onClose()
-          break
+          onClose();
+          break;
         case "ArrowLeft":
-          setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))
-          break
+          setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+          break;
         case "ArrowRight":
-          setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))
-          break
+          setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+          break;
       }
-    }
+    };
 
-    document.addEventListener("keydown", handleKeyDown)
-    return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [isOpen, images.length, onClose])
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, images.length, onClose]);
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   const goToPrevious = () => {
-    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))
-  }
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+  };
 
   const goToNext = () => {
-    setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))
-  }
+    setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm">
@@ -106,12 +111,12 @@ export function ImageViewer({ images, initialIndex, isOpen, onClose }: ImageView
 
         {/* Main image */}
         <div className="relative w-full h-full max-w-5xl max-h-[90vh]">
-          <Image
+          <img
             src={getImageUrl(images[currentIndex])}
             alt={`Image ${currentIndex + 1}`}
-            fill
+            // fill
             className="object-contain"
-            priority
+            // priority
           />
         </div>
 
@@ -130,15 +135,22 @@ export function ImageViewer({ images, initialIndex, isOpen, onClose }: ImageView
                 key={index}
                 onClick={() => setCurrentIndex(index)}
                 className={`relative w-12 h-12 rounded overflow-hidden flex-shrink-0 border-2 transition-colors ${
-                  index === currentIndex ? "border-foreground" : "border-transparent"
+                  index === currentIndex
+                    ? "border-foreground"
+                    : "border-transparent"
                 }`}
               >
-                <Image src={getImageUrl(image)} alt={`Thumbnail ${index + 1}`} fill className="object-cover" />
+                <img
+                  src={getImageUrl(image)}
+                  alt={`Thumbnail ${index + 1}`}
+                  // fill
+                  className="object-cover"
+                />
               </button>
             ))}
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }
