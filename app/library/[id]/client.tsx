@@ -290,12 +290,12 @@ export default function LibraryPageClient({ id }: PageProps) {
               className="relative aspect-[16/9] bg-muted rounded-lg overflow-hidden cursor-pointer group"
               onClick={() => openImageViewer(0)}
             >
-              <Image
+              <img
                 src={getImageUrl(library.preview)}
                 alt={`${library.name} preview`}
-                fill
+                // fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
-                priority
+                // priority
               />
               {/* Badges Overlay */}
               <div className="absolute top-3 sm:top-4 left-3 sm:left-4 z-10">
@@ -332,10 +332,10 @@ export default function LibraryPageClient({ id }: PageProps) {
                     className="relative aspect-video bg-muted rounded overflow-hidden cursor-pointer group"
                     onClick={() => openImageViewer(index + 1)}
                   >
-                    <Image
+                    <img
                       src={getImageUrl(image)}
                       alt={`${library.name} example ${index + 1}`}
-                      fill
+                      // fill
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200" />

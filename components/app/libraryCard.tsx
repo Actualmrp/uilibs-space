@@ -50,10 +50,10 @@ export function LibraryCard({ library }: { library: Library }) {
       className="group hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer"
     >
       <div className="relative h-40 bg-muted overflow-hidden">
-        <Image
+        <img
           src={getImageUrl(library.preview)}
           alt={`${library.name} preview`}
-          fill
+          // fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
         <div className="absolute top-2 left-2 z-10">

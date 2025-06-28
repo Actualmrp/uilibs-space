@@ -53,7 +53,7 @@ export default function RootLayout({
           <Analytics/>
           
           {/* Scripts Component */}
-          <Scripts />
+          {/* <Scripts /> */}
           
           {/* Consent Banner */}
           <ConsentBanner />
