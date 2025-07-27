@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     template: '%s | UI Libraries',
     default: 'UI Libraries [Beta]',
   },
-  description: "Discover component libraries for your scripts",
+  description: "Discover component libraries for your scripts.",
   icons: {
     icon: [
       { url: "/favicon.ico" },
@@ -71,7 +71,7 @@ export default function RootLayout({
                   rel="noopener noreferrer"
                 >
                   <Button variant="default" size="sm">
-                    Join our Discord community
+                    Join our Discord server
                   </Button>
                 </Link>
               </div>
