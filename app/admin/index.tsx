@@ -29,23 +29,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
   }
 
-  // Query the admins table instead of profiles
-  const { data: adminData, error: adminError } = await supabase
-    .from('admins')
-    .select('id') // minimal select
-    .eq('id', user.id)
-    .single()
-
-  if (adminError || !adminData) {
-    // Not an admin - redirect to homepage or login
-    return {
-      redirect: {
-        destination: '/',
-        permanent: false,
-      },
-    }
-  }
-
+  // No admin table check, all authenticated users allowed
   return {
     props: {},
   }
