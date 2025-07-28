@@ -1,11 +1,11 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/client"
-import { Button } from "@/components/ui/button"
-import { Plus, Pencil, Trash2 } from "lucide-react"
-import Link from "next/link"
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/client'
+import { Button } from '@/components/ui/button'
+import { Plus, Pencil, Trash2 } from 'lucide-react'
+import Link from 'next/link'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from '@/components/ui/alert-dialog'
 
 interface Library {
   id: string
@@ -35,54 +35,53 @@ export default function AdminPage() {
 
   useEffect(() => {
     const checkAdmin = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        router.push("/auth/login")
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser()
+
+      if (userError || !user) {
+        router.push('/auth/login')
         return
       }
 
-      // Check if user has admin role
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
+      // Check admin table instead of profile
+      const { data: adminRow, error: adminError } = await supabase
+        .from('admins')
+        .select('*')
+        .eq('id', user.id)
         .single()
 
-      if (profile?.role !== "admin") {
-        router.push("/")
+      if (adminError || !adminRow) {
+        router.push('/')
         return
       }
 
       setIsAdmin(true)
-      setLoading(false)
 
-      // Fetch libraries
-      const { data: librariesData } = await supabase
-        .from("libraries")
-        .select("*")
-        .order("created_at", { ascending: false })
+      // Fetch libraries after confirming admin
+      const { data: librariesData, error: librariesError } = await supabase
+        .from('libraries')
+        .select('*')
+        .order('created_at', { ascending: false })
 
-      if (librariesData) {
+      if (!librariesError && librariesData) {
         setLibraries(librariesData)
       }
+
+      setLoading(false)
     }
 
     checkAdmin()
-  }, [router])
+  }, [router, supabase])
 
   const handleDelete = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("libraries")
-        .delete()
-        .eq("id", id)
-
+      const { error } = await supabase.from('libraries').delete().eq('id', id)
       if (error) throw error
-
-      setLibraries(libraries.filter(lib => lib.id !== id))
+      setLibraries(libraries.filter((lib) => lib.id !== id))
     } catch (error) {
-      console.error("Error deleting library:", error)
+      console.error('Error deleting library:', error)
     }
   }
 
@@ -155,4 +154,4 @@ export default function AdminPage() {
       </div>
     </div>
   )
-} 
+}
