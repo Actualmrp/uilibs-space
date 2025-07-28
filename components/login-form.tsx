@@ -25,7 +25,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: 'https://uilibs-fr.vercel.app/auth/login?next=/protected',
+          redirectTo: 'https://uilibs-fr.vercel.app',
         },
       })
 
