@@ -17,9 +17,10 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser()
 
-  if (!user) {
+  if (userError || !user) {
     return {
       redirect: {
         destination: '/auth/login',
@@ -28,13 +29,15 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
+  // Query the admins table instead of profiles
+  const { data: adminData, error: adminError } = await supabase
+    .from('admins')
+    .select('id') // minimal select
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'admin') {
+  if (adminError || !adminData) {
+    // Not an admin - redirect to homepage or login
     return {
       redirect: {
         destination: '/',
